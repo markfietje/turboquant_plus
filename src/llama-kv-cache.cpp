@@ -417,7 +417,9 @@ llama_kv_cache::llama_kv_cache(
             // Initialize InnerQ scale_inv to all 1.0 (identity scaling)
             if (turbo_innerq_scale_inv != nullptr && turbo_innerq_scale_inv->buffer != nullptr) {
                 float ones[INNERQ_MAX_CHANNELS];
-                for (int i = 0; i < INNERQ_MAX_CHANNELS; i++) ones[i] = 1.0f;
+                for (int i = 0; i < INNERQ_MAX_CHANNELS; i++) {
+                    ones[i] = 1.0f;
+                }
                 ggml_backend_tensor_set(turbo_innerq_scale_inv, ones, 0, INNERQ_MAX_CHANNELS * sizeof(float));
             }
 
@@ -507,7 +509,9 @@ void llama_kv_cache::clear(bool data) {
             // Re-initialize InnerQ scale_inv to all 1.0
             if (turbo_innerq_scale_inv != nullptr && turbo_innerq_scale_inv->buffer != nullptr) {
                 float ones[INNERQ_MAX_CHANNELS];
-                for (int i = 0; i < INNERQ_MAX_CHANNELS; i++) ones[i] = 1.0f;
+                for (int i = 0; i < INNERQ_MAX_CHANNELS; i++) {
+                    ones[i] = 1.0f;
+                }
                 ggml_backend_tensor_set(turbo_innerq_scale_inv, ones, 0, INNERQ_MAX_CHANNELS * sizeof(float));
             }
         }
