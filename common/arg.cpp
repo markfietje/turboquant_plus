@@ -120,7 +120,7 @@ bool common_arg::is_exclude(enum llama_example ex) {
 }
 
 bool common_arg::get_value_from_env(std::string & output) const {
-    if (env == nullptr) return false;
+    if (env == nullptr) { return false; }
     if (!args_neg.empty()) {
         // for compatibility, we need to check LLAMA_ARG_NO_ env as well
         std::string neg_env = env;
@@ -151,7 +151,7 @@ bool common_arg::has_value_from_env() const {
     return env != nullptr && std::getenv(env);
 }
 
-static std::vector<std::string> break_str_into_lines(std::string input, size_t max_char_per_line) {
+static std::vector<std::string> break_str_into_lines(const std::string & input, size_t max_char_per_line) {
     std::vector<std::string> result;
     std::istringstream iss(input);
     std::string line;
@@ -160,16 +160,21 @@ static std::vector<std::string> break_str_into_lines(std::string input, size_t m
             result.push_back(l);
         } else {
             std::istringstream line_stream(l);
-            std::string word, current_line;
+            std::string word;
+            std::string current_line;
             while (line_stream >> word) {
                 if (current_line.length() + !current_line.empty() + word.length() > max_char_per_line) {
-                    if (!current_line.empty()) result.push_back(current_line);
+                    if (!current_line.empty()) {
+                        result.push_back(current_line);
+                    }
                     current_line = word;
                 } else {
                     current_line += (!current_line.empty() ? " " : "") + word;
                 }
             }
-            if (!current_line.empty()) result.push_back(current_line);
+            if (!current_line.empty()) {
+                result.push_back(current_line);
+            }
         }
     };
     while (std::getline(iss, line)) {
@@ -200,8 +205,12 @@ std::string common_arg::to_string() const {
             ss << arg << (arg != all_args.back() ? ", " : "");
         }
     }
-    if (value_hint) ss << " " << value_hint;
-    if (value_hint_2) ss << " " << value_hint_2;
+    if (value_hint) {
+        ss << " " << value_hint;
+    }
+    if (value_hint_2) {
+        ss << " " << value_hint_2;
+    }
     if (ss.tellp() > n_leading_spaces - 3) {
         // current line is too long, add new line
         ss << "\n" << leading_spaces;
@@ -218,6 +227,7 @@ std::string common_arg::to_string() const {
 
 std::vector<std::string> common_arg::get_args() const {
     std::vector<std::string> result;
+    result.reserve(args.size() + args_neg.size());
     for (const auto & arg : args) {
         result.push_back(std::string(arg));
     }
@@ -320,7 +330,7 @@ static bool common_params_handle_remote_preset(common_params & params, llama_exa
         auto remote_presets = ctx.load_from_ini(preset_path, global);
         remote_presets = ctx.cascade(global, remote_presets);
         if (remote_presets.find(hf_tag) != remote_presets.end()) {
-            common_preset preset = remote_presets.at(hf_tag);
+            const auto & preset = remote_presets.at(hf_tag);
             LOG_INF("\n%s", preset.to_ini().c_str()); // to_ini already added trailing newline
             preset.apply_to_params(params);
         } else {
@@ -431,11 +441,11 @@ static std::string get_all_kv_cache_types() {
 static bool parse_bool_value(const std::string & value) {
     if (is_truthy(value)) {
         return true;
-    } else if (is_falsey(value)) {
-        return false;
-    } else {
-        throw std::invalid_argument("invalid boolean value");
     }
+    if (is_falsey(value)) {
+        return false;
+    }
+    throw std::invalid_argument("invalid boolean value");
 }
 
 [[noreturn]] static void arg_removed(const std::string & msg) {
@@ -859,7 +869,7 @@ static void add_rpc_devices(const std::string & servers) {
         throw std::invalid_argument("failed to find RPC add server function");
     }
     for (const auto & server : rpc_servers) {
-        auto reg = ggml_backend_rpc_add_server_fn(server.c_str());
+        auto * reg = ggml_backend_rpc_add_server_fn(server.c_str());
         ggml_backend_register(reg);
     }
 }
@@ -1930,7 +1940,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--pooling"}, "{none,mean,cls,last,rank}",
         "pooling type for embeddings, use model default if unspecified",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "none") { params.pooling_type = LLAMA_POOLING_TYPE_NONE; }
+            if (value == "none") { params.pooling_type = LLAMA_POOLING_TYPE_NONE; }
             else if (value == "mean") { params.pooling_type = LLAMA_POOLING_TYPE_MEAN; }
             else if (value == "cls")  { params.pooling_type = LLAMA_POOLING_TYPE_CLS;  }
             else if (value == "last") { params.pooling_type = LLAMA_POOLING_TYPE_LAST; }
@@ -1942,7 +1952,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--attention"}, "{causal,non-causal}",
         "attention type for embeddings, use model default if unspecified",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "causal") { params.attention_type = LLAMA_ATTENTION_TYPE_CAUSAL; }
+            if (value == "causal") { params.attention_type = LLAMA_ATTENTION_TYPE_CAUSAL; }
             else if (value == "non-causal") { params.attention_type = LLAMA_ATTENTION_TYPE_NON_CAUSAL; }
             else { throw std::invalid_argument("invalid value"); }
         }
@@ -1951,7 +1961,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--rope-scaling"}, "{none,linear,yarn}",
         "RoPE frequency scaling method, defaults to linear unless specified by the model",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "none") { params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_NONE; }
+            if (value == "none") { params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_NONE; }
             else if (value == "linear") { params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_LINEAR; }
             else if (value == "yarn") { params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_YARN; }
             else { throw std::invalid_argument("invalid value"); }
@@ -2287,7 +2297,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         "if run without this previously, it is recommended to drop the system page cache before using this\n"
         "see https://github.com/ggml-org/llama.cpp/issues/1437",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "distribute" || value == "") { params.numa = GGML_NUMA_STRATEGY_DISTRIBUTE; }
+            if (value == "distribute" || value == "") { params.numa = GGML_NUMA_STRATEGY_DISTRIBUTE; }
             else if (value == "isolate") { params.numa = GGML_NUMA_STRATEGY_ISOLATE; }
             else if (value == "numactl") { params.numa = GGML_NUMA_STRATEGY_NUMACTL; }
             else { throw std::invalid_argument("invalid value"); }
@@ -2315,7 +2325,8 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
             }
             printf("Available devices:\n");
             for (auto * dev : devices) {
-                size_t free, total;
+                size_t free;
+                size_t total;
                 ggml_backend_dev_memory(dev, &free, &total);
                 printf("  %s: %s (%zu MiB, %zu MiB free)\n", ggml_backend_dev_name(dev), ggml_backend_dev_description(dev), total / 1024 / 1024, free / 1024 / 1024);
             }
@@ -2720,7 +2731,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--output-format"}, "{gguf,dat}",
         string_format("output format for imatrix file (default: %s)", params.imat_dat > 0 ? "dat" : "gguf"),
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "gguf") { params.imat_dat = -1; }
+            if (value == "gguf") { params.imat_dat = -1; }
             else if (value == "dat")  { params.imat_dat = 1;  }
             else { throw std::invalid_argument("invalid output format"); }
         }
@@ -3300,7 +3311,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--method"}, "{pca, mean}",
         "dimensionality reduction method to be used (default: pca)",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "pca") { params.cvector_dimre_method = DIMRE_METHOD_PCA; }
+            if (value == "pca") { params.cvector_dimre_method = DIMRE_METHOD_PCA; }
             else if (value == "mean") { params.cvector_dimre_method = DIMRE_METHOD_MEAN; }
             else { throw std::invalid_argument("invalid value"); }
         }
@@ -3309,7 +3320,7 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         {"--output-format"}, "{md,jsonl}",
         "output format for batched-bench results (default: md)",
         [](common_params & params, const std::string & value) {
-            /**/ if (value == "jsonl") { params.batched_bench_output_jsonl = true; }
+            if (value == "jsonl") { params.batched_bench_output_jsonl = true; }
             else if (value == "md") { params.batched_bench_output_jsonl = false; }
             else { throw std::invalid_argument("invalid value"); }
         }

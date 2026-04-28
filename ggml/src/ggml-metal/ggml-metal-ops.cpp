@@ -1440,13 +1440,13 @@ int ggml_metal_op_ssm_conv(ggml_metal_op_t ctx, int idx) {
     if (use_batched) {
         // Determine the smallest power of 2 that's >= ne1, but <= 256
         int BATCH_SIZE;
-        if      (ne1 > 128) BATCH_SIZE = 256;
-        else if (ne1 > 64 ) BATCH_SIZE = 128;
-        else if (ne1 > 32 ) BATCH_SIZE = 64;
-        else if (ne1 > 16 ) BATCH_SIZE = 32;
-        else if (ne1 > 8  ) BATCH_SIZE = 16;
-        else if (ne1 > 4  ) BATCH_SIZE = 8;
-        else                BATCH_SIZE = 2;
+        if      (ne1 > 128) { BATCH_SIZE = 256; }
+        else if (ne1 > 64 ) { BATCH_SIZE = 128; }
+        else if (ne1 > 32 ) { BATCH_SIZE = 64; }
+        else if (ne1 > 16 ) { BATCH_SIZE = 32; }
+        else if (ne1 > 8  ) { BATCH_SIZE = 16; }
+        else if (ne1 > 4  ) { BATCH_SIZE = 8; }
+        else                { BATCH_SIZE = 2; }
 
         auto pipeline = ggml_metal_library_get_pipeline_ssm_conv_batched(lib, op, BATCH_SIZE);
 
@@ -2719,24 +2719,24 @@ static bool ggml_metal_op_flash_attn_ext_use_turbo_flash(const ggml_tensor * op)
     const ggml_type type_v = op->src[2]->type;
 
     // Only for single-token decode (VEC path conditions)
-    if (ne01 != 1) return false;
+    if (ne01 != 1) { return false; }
 
     // Only for turbo3 V cache
-    if (type_v != GGML_TYPE_TURBO3_0) return false;
+    if (type_v != GGML_TYPE_TURBO3_0) { return false; }
 
     // Only for q8_0 or turbo3 K — asymmetric or symmetric turbo
-    if (type_k != GGML_TYPE_Q8_0 && type_k != GGML_TYPE_TURBO3_0) return false;
+    if (type_k != GGML_TYPE_Q8_0 && type_k != GGML_TYPE_TURBO3_0) { return false; }
 
     // Only for supported head dims (64, 96, 128) and power-of-2 aligned to 32
-    if (ne00 % 32 != 0) return false;
-    if (ne00 != 64 && ne00 != 96 && ne00 != 128) return false;
+    if (ne00 % 32 != 0) { return false; }
+    if (ne00 != 64 && ne00 != 96 && ne00 != 128) { return false; }
 
     // Check environment variable to opt-out
     const char * turbo_flash_env = getenv("TURBO_FLASH");
-    if (turbo_flash_env && turbo_flash_env[0] == '0') return false;
+    if (turbo_flash_env && turbo_flash_env[0] == '0') { return false; }
 
     // Check environment variable to force enable (bypasses other checks)
-    if (turbo_flash_env && turbo_flash_env[0] == '1') return true;
+    if (turbo_flash_env && turbo_flash_env[0] == '1') { return true; }
 
     // Default: disabled — TurboFlash two-pass kernel produces corrupt output
     // on Apple10 (M5 Max) and possibly other Metal4 GPUs. Use TURBO_FLASH=1
