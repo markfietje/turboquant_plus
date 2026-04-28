@@ -3714,6 +3714,12 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
     // removed params
     //
 
+    //
+    // Deprecated argument handlers — always throw, suppress noreturn warning
+    //
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+
     add_opt(common_arg(
         {"--draft", "--draft-n", "--draft-max"}, "N",
         "the argument has been removed. use --spec-draft-n-max or --spec-ngram-mod-n-max",
@@ -3749,6 +3755,8 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
             throw std::invalid_argument("the argument has been removed. use the respective --spec-ngram-*-min-hits");
         }
     ).set_spec().set_examples({LLAMA_EXAMPLE_SERVER}));
+
+#pragma clang diagnostic pop
 
     //
     // TTS params
