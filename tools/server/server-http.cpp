@@ -441,8 +441,17 @@ static void process_handler_response(server_http_req_ptr && request, server_http
             if (!has_next) {
                 sink.done();
                 SRV_DBG("%s", "http: stream ended\n");
+                // Return true instead of false to signal normal completion.
+                // Returning false causes httplib's write_content_chunked to interpret
+                // this as Error::Canceled, which propagates as write failure through
+                // write_response_core → process_request → process_server_socket_core,
+                // breaking the keep-alive loop and closing the TCP connection.
+                // Since sink.done() already sets data_available = false inside httplib,
+                // the while loop in write_content_chunked will exit on the next
+                // iteration check, returning Error::Success.
+                return true;
             }
-            return has_next;
+            return true;
         };
         const auto on_complete = [request = q_ptr, response = r_ptr](bool) mutable {
             response.reset(); // trigger the destruction of the response object
