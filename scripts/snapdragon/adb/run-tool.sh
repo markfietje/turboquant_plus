@@ -45,6 +45,15 @@ ndev=
 hb=
 [ "$HB" != "" ] && hb="GGML_HEXAGON_HOSTBUF=$HB"
 
+opbatch=
+[ "$OB" != "" ] && opbatch="GGML_HEXAGON_OPBATCH=$OB"
+
+opqueue=
+[ "$OQ" != "" ] && opqueue="GGML_HEXAGON_OPQUEUE=$OQ"
+
+oppoll=
+[ "$OP" != "" ] && oppoll="GGML_HEXAGON_OPPOLL=$OP"
+
 set -x
 
 tool=$1; shift

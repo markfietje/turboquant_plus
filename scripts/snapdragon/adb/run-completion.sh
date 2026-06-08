@@ -48,8 +48,6 @@ ndev=
 hb=
 [ "$HB" != "" ] && hb="GGML_HEXAGON_HOSTBUF=$HB"
 
-set -x
-
 adb $adbserial $adbhost shell " \
   cd $basedir; ulimit -c unlimited;        \
     LD_LIBRARY_PATH=$basedir/$branch/lib   \
