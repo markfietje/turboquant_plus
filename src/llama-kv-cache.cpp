@@ -137,7 +137,6 @@ llama_kv_cache::llama_kv_cache(
 
     GGML_ASSERT(kv_size % n_pad == 0);
 
-<<<<<<< HEAD
     // Auto-asymmetric: when symmetric turbo K+V is requested and the model has
     // high GQA ratio (few KV heads serving many Q heads), upgrade K to q8_0.
     // Turbo K quantization error gets amplified by the GQA broadcast factor.
@@ -164,7 +163,7 @@ llama_kv_cache::llama_kv_cache(
         }
     }
 
-    const uint32_t n_layer_kv = hparams.n_layer_kv();
+    const uint32_t n_layer_kv = hparams.n_layer();
 
     // define a comparator for the buft -> ctx map to ensure that the order is well-defined:
     struct ggml_backend_buft_comparator {
@@ -227,7 +226,7 @@ llama_kv_cache::llama_kv_cache(
 
     const bool is_mla = hparams.is_mla();
 
-    for (uint32_t il = 0; il < n_layer; il++) {
+    for (uint32_t il = 0; il < n_layer_kv; il++) {
         if (!hparams.has_kv(il)) {
             LLAMA_LOG_DEBUG("%s: layer %3d: does not have KV cache\n", __func__, il);
             continue;
@@ -321,7 +320,7 @@ llama_kv_cache::llama_kv_cache(
                     return mode;
                 }
                 // Auto-enable Boundary V (mode 7) when V is turbo2
-                if (type_v == GGML_TYPE_TURBO2_0 && hparams.n_layer >= 8) {
+                if (type_v == GGML_TYPE_TURBO2_0 && hparams.n_layer() >= 8) {
                     LLAMA_LOG_INFO("llama_kv_cache: Boundary V auto-enabled for turbo2-V (opt-out: TURBO_LAYER_ADAPTIVE=0)\n");
                     return 7;
                 }
@@ -329,7 +328,7 @@ llama_kv_cache::llama_kv_cache(
             }();
             const bool is_turbo = (type_k == GGML_TYPE_TURBO3_0 || type_k == GGML_TYPE_TURBO4_0 || type_k == GGML_TYPE_TURBO2_0);
             const bool v_is_turbo = (type_v == GGML_TYPE_TURBO3_0 || type_v == GGML_TYPE_TURBO4_0 || type_v == GGML_TYPE_TURBO2_0);
-            const uint32_t n_layer = hparams.n_layer;
+            const uint32_t n_layer = hparams.n_layer();
             if (adaptive_mode == 1 && is_turbo && n_layer >= 8) {
                 if (il < 4 || il >= n_layer - 4) {
                     layer_type_k = GGML_TYPE_Q8_0;
@@ -424,7 +423,7 @@ llama_kv_cache::llama_kv_cache(
     if (reuse) {
         LLAMA_LOG_DEBUG("%s: reusing layers:\n", __func__);
 
-        for (uint32_t il = 0; il < n_layer; il++) {
+        for (uint32_t il = 0; il < n_layer_kv; il++) {
             const int32_t il_reuse = reuse(il);
 
             if (il_reuse < 0) {
@@ -500,7 +499,6 @@ llama_kv_cache::llama_kv_cache(
                 ggml_type_name(type_v), (float)memory_size_v / (1024.0f * 1024.0f));
     }
 
-<<<<<<< HEAD
     // TurboQuant: master's #21038 attention rotation is OFF by default on this
     // fork. Enable per-side via LLAMA_ATTN_ROT_K_OVERRIDE=1 and/or
     // LLAMA_ATTN_ROT_V_OVERRIDE=1 if your specific model+KV combo benefits.
@@ -510,11 +508,11 @@ llama_kv_cache::llama_kv_cache(
     // phi-4, on q8/turbo4 KV) showed the optimal rotation policy is highly
     // model-and-quant specific:
     //
-    //   • gemma-4 31B Q8 q8/turbo4: V-only rotation gives -43% PPL (huge win).
-    //   • gemma-4 26B-A4B Q8 q8/turbo4: V-only gives -3.9%.
-    //   • gemma-4 E2B Q4_K_L q8/turbo4: V-only HURTS by +6.7%.
-    //   • phi-4 Q8 q8/turbo4: V-side rotation crashes (graph hash overflow).
-    //   • Qwen2.5/3.5/Mistral: rotation effect is within standard error.
+    //   - gemma-4 31B Q8 q8/turbo4: V-only rotation gives -43% PPL (huge win).
+    //   - gemma-4 26B-A4B Q8 q8/turbo4: V-only gives -3.9%.
+    //   - gemma-4 E2B Q4_K_L q8/turbo4: V-only HURTS by +6.7%.
+    //   - phi-4 Q8 q8/turbo4: V-side rotation crashes (graph hash overflow).
+    //   - Qwen2.5/3.5/Mistral: rotation effect is within standard error.
     //
     // No single default is correct everywhere, including within the same
     // architecture family (gemma-4 above shows three distinct optima across
@@ -525,11 +523,8 @@ llama_kv_cache::llama_kv_cache(
     //
     // Reported by @erazortt (TheTom/turboquant_plus#88).
     //
-    // LLAMA_ATTN_ROT_DISABLE retained as a no-op alias (default OFF makes it
-    // redundant but historical scripts may set it).
-    // Default attn_rot_disable=false now that rotation is OFF by default. The
-    // env var is preserved as a hard lock-out (=1 forces rotation off and
-    // blocks overrides), useful for users who want to guarantee no rotation
+    // LLAMA_ATTN_ROT_DISABLE retained as a hard lock-out (=1 forces rotation off
+    // and blocks overrides), useful for users who want to guarantee no rotation
     // regardless of any LLAMA_ATTN_ROT_*_OVERRIDE settings.
     const char * LLAMA_ATTN_ROT_DISABLE = getenv("LLAMA_ATTN_ROT_DISABLE");
     const bool attn_rot_disable = LLAMA_ATTN_ROT_DISABLE ? (atoi(LLAMA_ATTN_ROT_DISABLE) != 0) : false;
@@ -553,29 +548,6 @@ llama_kv_cache::llama_kv_cache(
     const char * ROT_V_OV = getenv("LLAMA_ATTN_ROT_V_OVERRIDE");
     if (ROT_V_OV && atoi(ROT_V_OV) != 0 && !attn_rot_disable) {
         attn_rot_v =
-            n_embd_head_v_all > 0 &&
-            ggml_is_quantized(type_v) &&
-            hparams.n_embd_head_v() % 64 == 0;
-    } else {
-        const char * LLAMA_ATTN_ROT_DISABLE = getenv("LLAMA_ATTN_ROT_DISABLE");
-        const bool attn_rot_disable = LLAMA_ATTN_ROT_DISABLE ? atoi(LLAMA_ATTN_ROT_DISABLE) : false;
-        if (attn_rot_disable) {
-            LLAMA_LOG_WARN("%s: attention rotation force disabled (LLAMA_ATTN_ROT_DISABLE)\n", __func__);
-        }
-
-        attn_rot_k =
-            !attn_rot_disable &&
-            n_embd_head_k_all > 0 &&
-            ggml_is_quantized(type_k) &&
-            hparams.n_embd_head_k() % 64 == 0;
-
-        // always create Hadamard rotation tensors for DeepSeek V3.2 DSA lightning indexer
-        if (model.arch == LLM_ARCH_DEEPSEEK32 && hparams.n_embd_head_k_full == hparams.indexer_head_size) {
-            attn_rot_k = true;
-        }
-
-        attn_rot_v =
-            !attn_rot_disable &&
             n_embd_head_v_all > 0 &&
             ggml_is_quantized(type_v) &&
             hparams.n_embd_head_v() % 64 == 0;

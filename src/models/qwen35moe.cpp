@@ -195,7 +195,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             cur = build_layer_attn(inp->get_attn(), cur, inp_pos, sections, il);
         }
 
-        if (il == n_layer - 1 && inp_out_ids && cparams.embeddings_nextn_masked) {
+        if (il == n_layer - 1 && inp_out_ids && !cparams.embeddings_pre_norm) {
             cur   = ggml_get_rows(ctx0, cur, inp_out_ids);
             inpSA = ggml_get_rows(ctx0, inpSA, inp_out_ids);
         }
@@ -230,10 +230,10 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
     // post-norm hidden state feeds both the LM head and the MTP seed below
     cur = build_norm(cur, model.output_norm, nullptr, LLM_NORM_RMS, -1);
 
-    cb(cur, "h_nextn", -1);
-    res->t_h_nextn = cur;
+    cb(cur, "h_pre_norm", -1);
+    res->t_h_pre_norm = cur;
 
-    if (!cparams.embeddings_nextn_masked && inp_out_ids) {
+    if (cparams.embeddings_pre_norm && inp_out_ids) {
         cur = ggml_get_rows(ctx0, cur, inp_out_ids);
     }
 
@@ -722,8 +722,8 @@ llama_model_qwen35moe::graph_mtp::graph_mtp(const llama_model & model, const llm
     GGML_ASSERT(head_norm_w && "QWEN35MOE MTP: missing both nextn.shared_head_norm and output_norm");
     cur = build_norm(cur, head_norm_w, nullptr, LLM_NORM_RMS, -1);
 
-    cb(cur, "h_nextn", -1);
-    res->t_h_nextn= cur;
+    cb(cur, "h_pre_norm", -1);
+    res->t_h_pre_norm= cur;
 
     cur = ggml_get_rows(ctx0, cur, inp_out_ids);
     cb(cur, "mtp_shared_head_norm", -1);

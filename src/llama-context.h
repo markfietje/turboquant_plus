@@ -85,8 +85,8 @@ struct llama_context {
     float * get_embeddings_ith(int32_t i);
     float * get_embeddings_seq(llama_seq_id seq_id);
 
-    float * get_embeddings_nextn();
-    float * get_embeddings_nextn_ith(int32_t i);
+    float * get_embeddings_pre_norm();
+    float * get_embeddings_pre_norm_ith(int32_t i);
 
     llama_token * get_sampled_tokens() const;
     llama_token   get_sampled_token_ith(int32_t idx);
@@ -111,7 +111,7 @@ struct llama_context {
     void set_abort_callback(bool (*abort_callback)(void * data), void * abort_callback_data);
 
     void set_embeddings (bool value);
-    void set_embeddings_nextn(bool value, bool masked);
+    void set_embeddings_pre_norm(bool value);
     void set_causal_attn(bool value);
     void set_warmup(bool value);
 
@@ -283,10 +283,10 @@ private:
     // populated only when pooling_type == LLAMA_POOLING_TYPE_NONE
     buffer_view<float> embd = {nullptr, 0};
 
-    // hidden state required by the nextn layers (2-dimensional array: [n_outputs][n_embd])
-    // populated only when cparams.embeddings_nextn is enabled and the model graph
-    // sets llm_graph_result::t_h_nextn
-    buffer_view<float> embd_nextn = {nullptr, 0};
+    // pre-norm hidden state for MTP prefill (2-dimensional array: [n_outputs][n_embd])
+    // populated only when cparams.embeddings_pre_norm is enabled and the model graph
+    // sets llm_graph_result::t_h_pre_norm
+    buffer_view<float> embd_pre_norm = {nullptr, 0};
 
     struct sampling_info {
         // !samplers.empty() to check if any samplers are active
@@ -315,6 +315,8 @@ private:
     std::unique_ptr<llama_batch_allocr> balloc;
 
     uint32_t n_outputs = 0; // number of actually-used outputs in the current ubatch or last logical batch
+    int64_t n_outputs_pre_norm = 0; // number of pre-norm outputs in the current batch
+    int64_t n_outputs_pre_norm_max = 0; // max pre-norm outputs supported by the context
 
     std::vector<int32_t> output_ids; // map batch token positions to ids of the logits and embd buffers
 

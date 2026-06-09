@@ -3029,7 +3029,7 @@ private:
 
                         // embedding requires all tokens in the batch to be output;
                         // MTP also wants logits at every prompt position so the
-                        // streaming hook can mirror t_h_nextn into ctx_dft.
+                        // streaming hook can mirror t_h_pre_norm into ctx_dft.
                         common_batch_add(batch,
                             cur_tok,
                             slot.prompt.tokens.pos_next(),
