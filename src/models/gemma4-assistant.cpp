@@ -194,10 +194,10 @@ llama_model_gemma4_assistant::graph::graph(const llama_model & model, const llm_
     cb(logits, "result_output", -1);
     res->t_logits = logits;
 
-    ggml_tensor * h_pre = ggml_mul_mat(ctx0, model.nextn_proj_post, cur);
-    cb(h_pre, "h_pre_norm", -1);
-    res->t_h_pre_norm = h_pre;
+    ggml_tensor * h_next = ggml_mul_mat(ctx0, model.nextn_proj_post, cur);
+    cb(h_next, "h_nextn", -1);
+    res->t_h_nextn = h_next;
 
     ggml_build_forward_expand(gf, logits);
-    ggml_build_forward_expand(gf, h_pre);
+    ggml_build_forward_expand(gf, h_next);
 }
